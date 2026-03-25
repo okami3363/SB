@@ -117,6 +117,16 @@ struct ContentView: View {
             withAnimation(.easeInOut(duration: 0.25)) {
                 isKeyboardVisible = false
             }
+            // 鍵盤收起後自動置頂
+            let js = """
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            document.querySelectorAll('*').forEach(function(el) {
+                if (el.scrollTop > 0) { el.scrollTop = 0; }
+            });
+            """
+            SharedWebViewProvider.shared.webView.evaluateJavaScript(js, completionHandler: nil)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
             // 記憶體不足時清除 WebView 快取，釋放資源
