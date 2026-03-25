@@ -304,9 +304,10 @@ final class SharedWebViewProvider {
 
 struct WebView: UIViewRepresentable {
     let url: URL
+    @Binding var loadError: Bool
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(parent: self)
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -324,5 +325,22 @@ struct WebView: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        let parent: WebView
+
+        init(parent: WebView) {
+            self.parent = parent
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            parent.loadError = false
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            parent.loadError = true
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            parent.loadError = true
+        }
     }
 }

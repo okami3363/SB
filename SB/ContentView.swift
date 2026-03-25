@@ -4,6 +4,7 @@ import WebKit
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var isKeyboardVisible = false
+    @State private var loadError = false
 
     private let targetURL = URL(string: "https://www.ero-labs.com/zh/cloud_game.html?id=47&connect_type=1&connection_id=28")!
 
@@ -60,10 +61,35 @@ struct ContentView: View {
 
             // WebView 內容 + 底部覆蓋層（更明確貼齊螢幕底部）
             ZStack {
-                WebView(url: targetURL)
+                WebView(url: targetURL, loadError: $loadError)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea(.container, edges: .bottom)
                     .ignoresSafeArea(.keyboard)
+
+                if loadError {
+                    VStack(spacing: 16) {
+                        Image(systemName: "wifi.exclamationmark")
+                            .font(.system(size: 48))
+                            .foregroundColor(.gray)
+                        Text("載入失敗")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                        Button(action: {
+                            loadError = false
+                            SharedWebViewProvider.shared.loadWhenReady(url: targetURL)
+                        }) {
+                            Text("重試")
+                                .font(.body)
+                                .padding(.horizontal, 32)
+                                .padding(.vertical, 10)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(colorScheme == .dark ? Color.black : Color.white)
+                }
 
                 if !isKeyboardVisible {
                     VStack(spacing: 0) {
