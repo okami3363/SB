@@ -74,9 +74,8 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // 預載以加速首屏
-            let request = URLRequest(url: targetURL)
-            SharedWebViewProvider.shared.webView.load(request)
+            // 確保攔截規則就緒後才載入頁面
+            SharedWebViewProvider.shared.loadWhenReady(url: targetURL)
         }
         // 不加任何 ignoresSafeArea，畫面會自動依附安全範圍
     }
