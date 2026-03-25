@@ -22,6 +22,20 @@ private final class SharedWebKit {
         // 使用預設資料儲存（支援快取 / cookie）
         config.websiteDataStore = .default()
 
+        // 注入 JS：停用長按選取、右鍵選單、文字選取等干擾遊戲的行為
+        let gameOptimizeJS = """
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+        document.documentElement.style.webkitUserSelect = 'none';
+        document.documentElement.style.webkitTouchCallout = 'none';
+        """
+        let userScript = WKUserScript(
+            source: gameOptimizeJS,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+        config.userContentController.addUserScript(userScript)
+
         return config
     }
 
