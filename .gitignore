@@ -1,3 +1,6 @@
 # Xcode 使用者個人設定
 xcuserdata/
 *.xcuserstate
+
+# Claude Code 本地設定
+.claude/
