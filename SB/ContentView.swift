@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var isKeyboardVisible = false
     @State private var loadError = false
+    @State private var saveFeedback: Bool?
 
     private let targetURL = URL(string: "https://www.ero-labs.com/zh/cloud_game.html?id=47&connect_type=1&connection_id=28")!
 
@@ -24,6 +25,22 @@ struct ContentView: View {
                     .font(.headline)
                     .padding(.leading)
                 Spacer()
+                Button(action: {
+                    let maskHeight: CGFloat = isKeyboardVisible ? 0 : 81
+                    SharedWebViewProvider.shared.takeScreenshot(maskHeight: maskHeight) { image in
+                        guard let image else { return }
+                        SharedWebViewProvider.shared.saveToPhotos(image) { success in
+                            withAnimation { saveFeedback = success }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation { saveFeedback = nil }
+                            }
+                        }
+                    }
+                }) {
+                    Image(systemName: "camera")
+                        .padding()
+                        .foregroundColor(refreshButtonColor)
+                }
                 Button(action: {
                     // 置頂：將頁面捲動到最上方
                     let js = """
@@ -100,6 +117,22 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .ignoresSafeArea(.container, edges: .bottom)
+                    .transition(.opacity)
+                }
+
+                // 儲存結果回饋
+                if let success = saveFeedback {
+                    VStack(spacing: 8) {
+                        Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(success ? .green : .red)
+                        Text(success ? "已儲存" : "儲存失敗")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                    }
+                    .padding(24)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(16)
                     .transition(.opacity)
                 }
             }

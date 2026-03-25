@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import Photos
 
 // 共用的 WebKit 資源池，讓 cookie / session / 快取可被重用
 private final class SharedWebKit {
@@ -285,6 +286,37 @@ final class SharedWebViewProvider {
         webView.scrollView.showsVerticalScrollIndicator = false
         webView.scrollView.showsHorizontalScrollIndicator = false
         webView.scrollView.pinchGestureRecognizer?.isEnabled = false
+    }
+
+    /// 截取 WebView 可見區域，回傳 UIImage
+    func takeScreenshot(maskHeight: CGFloat = 81, completion: @escaping (UIImage?) -> Void) {
+        let bounds = webView.bounds
+        guard bounds.width > 0, bounds.height > 0 else {
+            completion(nil)
+            return
+        }
+
+        let config = WKSnapshotConfiguration()
+        config.rect = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height - maskHeight)
+
+        webView.takeSnapshot(with: config) { image, _ in
+            DispatchQueue.main.async { completion(image) }
+        }
+    }
+
+    /// 儲存圖片到相簿
+    func saveToPhotos(_ image: UIImage, completion: @escaping (Bool) -> Void) {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.creationRequestForAsset(from: image)
+            }) { success, _ in
+                DispatchQueue.main.async { completion(success) }
+            }
+        }
     }
 
     /// 確保攔截規則就緒後才載入頁面
