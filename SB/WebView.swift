@@ -269,7 +269,7 @@ final class SharedWebViewProvider {
 
         // 視覺與互動優化
         webView.scrollView.decelerationRate = .normal
-        webView.allowsBackForwardNavigationGestures = true
+        webView.allowsBackForwardNavigationGestures = false
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
