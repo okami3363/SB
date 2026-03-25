@@ -92,7 +92,7 @@ struct ContentView: View {
                 isKeyboardVisible = false
             }
         }
-        // 不加任何 ignoresSafeArea，畫面會自動依附安全範圍
+        .statusBarHidden(true)
     }
 }
 
