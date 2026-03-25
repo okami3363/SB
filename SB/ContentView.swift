@@ -118,6 +118,13 @@ struct ContentView: View {
                 isKeyboardVisible = false
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            // 記憶體不足時清除 WebView 快取，釋放資源
+            WKWebsiteDataStore.default().removeData(
+                ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
+                modifiedSince: .distantPast
+            ) {}
+        }
         .statusBarHidden(true)
     }
 }
