@@ -3,6 +3,7 @@ import WebKit
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @State private var isKeyboardVisible = false
 
     private let targetURL = URL(string: "https://www.ero-labs.com/zh/cloud_game.html?id=47&connect_type=1&connection_id=28")!
 
@@ -62,20 +63,34 @@ struct ContentView: View {
                 WebView(url: targetURL)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea(.container, edges: .bottom)
+                    .ignoresSafeArea(.keyboard)
 
-                VStack(spacing: 0) {
-                    Spacer()
-                    Rectangle()
-                        .fill(colorScheme == .dark ? Color.black : Color(.systemGray6))
-                        .frame(height: 81)
-                        .frame(maxWidth: .infinity)
+                if !isKeyboardVisible {
+                    VStack(spacing: 0) {
+                        Spacer()
+                        Rectangle()
+                            .fill(colorScheme == .dark ? Color.black : Color(.systemGray6))
+                            .frame(height: 81)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .ignoresSafeArea(.container, edges: .bottom)
+                    .transition(.opacity)
                 }
-                .ignoresSafeArea(.container, edges: .bottom)
             }
         }
         .onAppear {
             // 確保攔截規則就緒後才載入頁面
             SharedWebViewProvider.shared.loadWhenReady(url: targetURL)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isKeyboardVisible = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isKeyboardVisible = false
+            }
         }
         // 不加任何 ignoresSafeArea，畫面會自動依附安全範圍
     }
