@@ -23,6 +23,22 @@ struct ContentView: View {
                     .padding(.leading)
                 Spacer()
                 Button(action: {
+                    // 置頂：將頁面捲動到最上方
+                    let js = """
+                    window.scrollTo(0, 0);
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
+                    document.querySelectorAll('*').forEach(function(el) {
+                        if (el.scrollTop > 0) { el.scrollTop = 0; }
+                    });
+                    """
+                    SharedWebViewProvider.shared.webView.evaluateJavaScript(js, completionHandler: nil)
+                }) {
+                    Image(systemName: "arrow.up.to.line")
+                        .padding()
+                        .foregroundColor(refreshButtonColor)
+                }
+                Button(action: {
                     // 刷新：若已有頁面則 reload，否則載入 targetURL
                     let webView = SharedWebViewProvider.shared.webView
                     if webView.url != nil {
