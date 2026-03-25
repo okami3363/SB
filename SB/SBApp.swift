@@ -9,6 +9,12 @@ import SwiftUI
 
 @main
 struct SBApp: App {
+
+    init() {
+        // DNS 預解析：App 啟動時提前解析遊戲伺服器網域
+        prefetchDNS(hosts: ["www.ero-labs.com"])
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -21,5 +27,15 @@ struct SBApp: App {
                     UIApplication.shared.isIdleTimerDisabled = false
                 }
         }
+    }
+}
+
+/// 透過建立臨時連線觸發系統 DNS 快取
+private func prefetchDNS(hosts: [String]) {
+    for host in hosts {
+        let url = URL(string: "https://\(host)")!
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
+        request.httpMethod = "HEAD"
+        URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
     }
 }
