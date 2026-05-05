@@ -6,6 +6,8 @@ struct ContentView: View {
     @State private var isKeyboardVisible = false
     @State private var loadError = false
     @State private var saveFeedback: Bool?
+    @State private var showBottomButtons = false
+    @State private var hideButtonsTask: DispatchWorkItem?
 
     private let targetURL = URL(string: "https://www.ero-labs.com/zh/cloud_game.html?id=47&connect_type=1&connection_id=28")!
 
@@ -17,124 +19,121 @@ struct ContentView: View {
         colorScheme == .dark ? .white : .black
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            // 自訂 Nav 區塊
-            HStack {
-                Text("")
-                    .font(.headline)
-                    .padding(.leading)
-                Spacer()
-                Button(action: {
-                    let maskHeight: CGFloat = isKeyboardVisible ? 0 : 81
-                    SharedWebViewProvider.shared.takeScreenshot(maskHeight: maskHeight) { image in
-                        guard let image else { return }
-                        SharedWebViewProvider.shared.saveToPhotos(image) { success in
-                            withAnimation { saveFeedback = success }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation { saveFeedback = nil }
-                            }
-                        }
-                    }
-                }) {
-                    Image(systemName: "camera")
-                        .padding()
-                        .foregroundColor(refreshButtonColor)
-                }
-                Button(action: {
-                    // 置頂：將頁面捲動到最上方
-                    let js = """
-                    window.scrollTo(0, 0);
-                    document.documentElement.scrollTop = 0;
-                    document.body.scrollTop = 0;
-                    document.querySelectorAll('*').forEach(function(el) {
-                        if (el.scrollTop > 0) { el.scrollTop = 0; }
-                    });
-                    """
-                    SharedWebViewProvider.shared.webView.evaluateJavaScript(js, completionHandler: nil)
-                }) {
-                    Image(systemName: "arrow.up.to.line")
-                        .padding()
-                        .foregroundColor(refreshButtonColor)
-                }
-                Button(action: {
-                    // 刷新：若已有頁面則 reload，否則載入 targetURL
-                    let webView = SharedWebViewProvider.shared.webView
-                    if webView.url != nil {
-                        webView.reload()
-                    } else {
-                        let request = URLRequest(url: targetURL)
-                        SharedWebViewProvider.shared.webView.load(request)
-                    }
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .padding()
-                        .foregroundColor(refreshButtonColor)
-                }
-                .padding(.trailing, 0)
+    private func revealBottomButtons() {
+        hideButtonsTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showBottomButtons = true
+        }
+        let task = DispatchWorkItem {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showBottomButtons = false
             }
-            .frame(height: 56)
-            .background(navBackground)
+        }
+        hideButtonsTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: task)
+    }
 
-            // WebView 內容 + 底部覆蓋層（更明確貼齊螢幕底部）
-            ZStack {
-                WebView(url: targetURL, loadError: $loadError)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea(.container, edges: .bottom)
-                    .ignoresSafeArea(.keyboard)
+    var body: some View {
+        ZStack {
+            WebView(url: targetURL, loadError: $loadError)
+                .ignoresSafeArea()
 
-                if loadError {
-                    VStack(spacing: 16) {
-                        Image(systemName: "wifi.exclamationmark")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
-                        Text("載入失敗")
-                            .font(.headline)
-                            .foregroundColor(.gray)
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(height: 60)
+                Spacer()
+            }
+            .ignoresSafeArea(.container, edges: .top)
+
+            VStack(spacing: 0) {
+                Spacer()
+                HStack(alignment: .top) {
+                    Spacer()
+                    HStack {
                         Button(action: {
-                            loadError = false
-                            SharedWebViewProvider.shared.loadWhenReady(url: targetURL)
+                            SharedWebViewProvider.shared.takeScreenshot(topMaskHeight: 60, bottomMaskHeight: 80) { image in
+                                guard let image else { return }
+                                SharedWebViewProvider.shared.saveToPhotos(image) { success in
+                                    withAnimation { saveFeedback = success }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                        withAnimation { saveFeedback = nil }
+                                    }
+                                }
+                            }
+                            revealBottomButtons()
                         }) {
-                            Text("重試")
-                                .font(.body)
-                                .padding(.horizontal, 32)
-                                .padding(.vertical, 10)
-                                .background(Color.blue)
+                            Image(systemName: "camera")
+                                .padding()
                                 .foregroundColor(.white)
-                                .cornerRadius(8)
+                        }
+                        Button(action: {
+                            let webView = SharedWebViewProvider.shared.webView
+                            if webView.url != nil {
+                                webView.reload()
+                            } else {
+                                let request = URLRequest(url: targetURL)
+                                SharedWebViewProvider.shared.webView.load(request)
+                            }
+                            revealBottomButtons()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .padding()
+                                .foregroundColor(.white)
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(colorScheme == .dark ? Color.black : Color.white)
+                    .opacity(showBottomButtons ? 1 : 0)
+                    .allowsHitTesting(showBottomButtons)
                 }
-
-                if !isKeyboardVisible {
-                    VStack(spacing: 0) {
-                        Spacer()
-                        Rectangle()
-                            .fill(colorScheme == .dark ? Color.black : Color(.systemGray6))
-                            .frame(height: 81)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .ignoresSafeArea(.container, edges: .bottom)
-                    .transition(.opacity)
+                .frame(height: 80)
+                .frame(maxWidth: .infinity)
+                .background(Color.black)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    revealBottomButtons()
                 }
+            }
+            .ignoresSafeArea(.container, edges: .bottom)
 
-                // 儲存結果回饋
-                if let success = saveFeedback {
-                    VStack(spacing: 8) {
-                        Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(success ? .green : .red)
-                        Text(success ? "已儲存" : "儲存失敗")
-                            .font(.caption)
+            if loadError {
+                VStack(spacing: 16) {
+                    Image(systemName: "wifi.exclamationmark")
+                        .font(.system(size: 48))
+                        .foregroundColor(.gray)
+                    Text("載入失敗")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                    Button(action: {
+                        loadError = false
+                        SharedWebViewProvider.shared.loadWhenReady(url: targetURL)
+                    }) {
+                        Text("重試")
+                            .font(.body)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 10)
+                            .background(Color.blue)
                             .foregroundColor(.white)
+                            .cornerRadius(8)
                     }
-                    .padding(24)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(16)
-                    .transition(.opacity)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(colorScheme == .dark ? Color.black : Color.white)
+            }
+
+            // 儲存結果回饋
+            if let success = saveFeedback {
+                VStack(spacing: 8) {
+                    Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(success ? .green : .red)
+                    Text(success ? "已儲存" : "儲存失敗")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                }
+                .padding(24)
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(16)
+                .transition(.opacity)
             }
         }
         .onAppear {

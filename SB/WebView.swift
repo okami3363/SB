@@ -270,6 +270,7 @@ final class SharedWebViewProvider {
 
         // 視覺與互動優化
         webView.scrollView.decelerationRate = .normal
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.allowsBackForwardNavigationGestures = false
         webView.isOpaque = false
         webView.backgroundColor = .clear
@@ -289,15 +290,21 @@ final class SharedWebViewProvider {
     }
 
     /// 截取 WebView 可見區域，回傳 UIImage
-    func takeScreenshot(maskHeight: CGFloat = 81, completion: @escaping (UIImage?) -> Void) {
+    func takeScreenshot(topMaskHeight: CGFloat = 60, bottomMaskHeight: CGFloat = 80, completion: @escaping (UIImage?) -> Void) {
         let bounds = webView.bounds
         guard bounds.width > 0, bounds.height > 0 else {
             completion(nil)
             return
         }
 
+        let croppedHeight = bounds.height - topMaskHeight - bottomMaskHeight
+        guard croppedHeight > 0 else {
+            completion(nil)
+            return
+        }
+
         let config = WKSnapshotConfiguration()
-        config.rect = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height - maskHeight)
+        config.rect = CGRect(x: 0, y: topMaskHeight, width: bounds.width, height: croppedHeight)
 
         webView.takeSnapshot(with: config) { image, _ in
             DispatchQueue.main.async { completion(image) }
