@@ -52,7 +52,7 @@ struct ContentView: View {
                     Spacer()
                     HStack {
                         Button(action: {
-                            SharedWebViewProvider.shared.takeScreenshot(topMaskHeight: 60, bottomMaskHeight: 80) { image in
+                            SharedWebViewProvider.shared.takeScreenshot(topMaskHeight: 60, bottomMaskHeight: 75) { image in
                                 guard let image else { return }
                                 SharedWebViewProvider.shared.saveToPhotos(image) { success in
                                     withAnimation { saveFeedback = success }
@@ -85,9 +85,9 @@ struct ContentView: View {
                     .opacity(showBottomButtons ? 1 : 0)
                     .allowsHitTesting(showBottomButtons)
                 }
-                .frame(height: 80)
+                .frame(height: 75)
                 .frame(maxWidth: .infinity)
-                .background(Color.black)
+                .background(Color.black.opacity(1.0))
                 .contentShape(Rectangle())
                 .onTapGesture {
                     revealBottomButtons()
